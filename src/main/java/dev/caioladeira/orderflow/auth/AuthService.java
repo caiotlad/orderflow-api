@@ -30,6 +30,9 @@ public class AuthService {
     public record TokenResponse(String accessToken, String tokenType, long expiresIn) {}
 
     public TokenResponse login(String username, String password) {
+        if (password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            throw new BadCredentialsException("Usuário ou senha inválidos.");
+        }
         var found = users.findByUsername(username);
         boolean matches = passwords.matches(password, found.map(UserStore.StoredUser::passwordHash).orElse(dummyHash));
         if (found.isEmpty() || !matches) {

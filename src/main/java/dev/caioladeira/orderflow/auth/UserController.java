@@ -1,5 +1,7 @@
 package dev.caioladeira.orderflow.auth;
 
+import dev.caioladeira.orderflow.shared.BusinessException;
+import java.util.UUID;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -14,12 +16,20 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
     private final UserService users;
-    public UserController(UserService users) { this.users = users; }
+    private final UserStore store;
+    public UserController(UserService users, UserStore store) { this.users = users; this.store = store; }
 
     public record CreateUserRequest(
             @NotBlank @Pattern(regexp = "[a-zA-Z0-9._-]{3,60}") String username,
             @NotBlank @Size(min = 12, max = 72) String password,
             @NotNull UserRole role) {}
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Consultar usuário cadastrado")
+    public UserView find(@PathVariable UUID id) {
+        return store.findById(id).orElseThrow(() -> BusinessException.missing("Usuário")).view();
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
