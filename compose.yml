@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-orderflow}
+      POSTGRES_USER: ${POSTGRES_USER:-orderflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copie .env.example para .env}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - orderflow-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  app:
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-orderflow}
+      DB_USERNAME: ${POSTGRES_USER:-orderflow}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Copie .env.example para .env}
+      ORDERFLOW_JWT_SECRET: ${ORDERFLOW_JWT_SECRET:?Defina a chave de assinatura}
+      ORDERFLOW_BOOTSTRAP_USERNAME: ${ORDERFLOW_BOOTSTRAP_USERNAME:-admin}
+      ORDERFLOW_BOOTSTRAP_PASSWORD: ${ORDERFLOW_BOOTSTRAP_PASSWORD:?Defina a senha inicial}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  orderflow-data:

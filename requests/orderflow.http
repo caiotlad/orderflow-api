@@ -1,0 +1,71 @@
+@baseUrl = http://localhost:8080
+@token = COLE_O_TOKEN_DO_LOGIN
+@productId = COLE_O_ID_DO_PRODUTO
+@orderId = COLE_O_ID_DO_PEDIDO
+
+### Saúde do serviço
+GET {{baseUrl}}/actuator/health
+
+### Login: substitua pela senha definida no seu .env
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "local-admin-password-change-me"
+}
+
+### Cadastrar produto
+POST {{baseUrl}}/api/v1/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "sku": "CAFE-01",
+  "name": "Café torrado 500g",
+  "price": 25.90
+}
+
+### Registrar entrada
+POST {{baseUrl}}/api/v1/products/{{productId}}/stock-movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "INBOUND",
+  "quantity": 10,
+  "reason": "Compra inicial"
+}
+
+### Reservar pedido: mantenha a chave para testar o reenvio da mesma solicitação
+POST {{baseUrl}}/api/v1/orders
+Authorization: Bearer {{token}}
+Idempotency-Key: 41e33cb4-5118-4e0a-b51d-9cae06c925da
+Content-Type: application/json
+
+{
+  "customerName": "Mercado de demonstração",
+  "items": [
+    {"productId": "{{productId}}", "quantity": 2}
+  ]
+}
+
+### Consultar pedido
+GET {{baseUrl}}/api/v1/orders/{{orderId}}
+Authorization: Bearer {{token}}
+
+### Confirmar pedido
+POST {{baseUrl}}/api/v1/orders/{{orderId}}/confirm
+Authorization: Bearer {{token}}
+
+### Cancelar um pedido que ainda esteja RESERVED
+POST {{baseUrl}}/api/v1/orders/{{orderId}}/cancel
+Authorization: Bearer {{token}}
+
+### Consultar histórico do produto
+GET {{baseUrl}}/api/v1/products/{{productId}}/stock-movements
+Authorization: Bearer {{token}}
+
+### Listar pedidos confirmados
+GET {{baseUrl}}/api/v1/orders?status=CONFIRMED&page=0&size=20
+Authorization: Bearer {{token}}
