@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: orderflow-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/orderflow}
+    username: ${DB_USERNAME:orderflow}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 10000
+      connection-init-sql: SET lock_timeout = '10s'
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+  shutdown: graceful
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+orderflow:
+  security:
+    secret: ${ORDERFLOW_JWT_SECRET}
+    issuer: orderflow-api
+    ttl-seconds: 3600
+  bootstrap:
+    username: ${ORDERFLOW_BOOTSTRAP_USERNAME:}
+    password: ${ORDERFLOW_BOOTSTRAP_PASSWORD:}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    persist-authorization: false
