@@ -41,7 +41,25 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Testar e empacotar
-        run: mvn -B -ntp verify
+        run: ./mvnw -B -ntp verify
+      - name: Construir imagem
+        run: docker build -t orderflow-api:ci .
+      - name: Testar a imagem pela API HTTP
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/orderflow_test
+          DB_USERNAME: orderflow
+          DB_PASSWORD: test-password
+          ORDERFLOW_JWT_SECRET: ci-smoke-signing-secret-with-at-least-32-bytes
+          ORDERFLOW_BOOTSTRAP_USERNAME: admin
+          ORDERFLOW_BOOTSTRAP_PASSWORD: test-admin-password
+          DEMO_PASSWORD: test-admin-password
+        run: |
+          docker run --rm -d --name orderflow-smoke --network host \
+            -e DB_URL -e DB_USERNAME -e DB_PASSWORD \
+            -e ORDERFLOW_JWT_SECRET -e ORDERFLOW_BOOTSTRAP_USERNAME \
+            -e ORDERFLOW_BOOTSTRAP_PASSWORD orderflow-api:ci
+          trap 'docker logs orderflow-smoke > target/smoke-app.log 2>&1; docker stop orderflow-smoke' EXIT
+          python3 scripts/demo.py --wait
       - name: Guardar relatórios
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,5 +69,4 @@ jobs:
             target/surefire-reports/
             target/failsafe-reports/
             target/site/jacoco/
-      - name: Construir imagem
-        run: docker build -t orderflow-api:ci .
+            target/smoke-app.log
